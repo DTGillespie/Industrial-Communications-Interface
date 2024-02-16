@@ -1,0 +1,23 @@
+{
+  "name": "cfs-eip",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "rimraf dist && tsc",
+    "test": "rimraf dist && tsc && node ./dist/test/index.js",
+    "ts-test": "ts-node ./test/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@10.10.200.228:Controls/cfs-eip.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  }
+}
