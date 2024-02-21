@@ -1,34 +1,6 @@
-export enum CIPClassID {
-  Identity          = 0x01,
-  MessageRouter     = 0x02,
-  Assembly          = 0x04,
-  ConnectionManager = 0x06,
-  Parameter         = 0x0F
-};
+import { EIPCommandCode, Directive } from "./lib";
 
-export enum CIPServiceID {
-  GetAttributeAll    = 0x01,
-  SetAttributeAll    = 0x02,
-  GetAttributeList   = 0x03,
-  SetAttributeList   = 0x04,
-  GetAttributeSingle = 0x0E,
-  SetAttributeSingle = 0x10
-};
-
-export enum EIPCommandCode {
-  NOP               = 0x00,
-  ListIdentity      = 0x63,
-  ListInterfaces    = 0x64,
-  RegisterSession   = 0x65,
-  UnregisterSession = 0x66,
-  SendRRData        = 0x6F,
-  SendUnitData      = 0x70,
-  IndicateStatus    = 0x78,
-  CancelSend        = 0x79,
-  MultiSend         = 0x64
-};
-
-class EthernetIPHeader {
+export class EIPHeader {
   
   private commandCode        : EIPCommandCode;
   private encapsulatedLength : number; 
@@ -65,7 +37,7 @@ class EthernetIPHeader {
   };
 };
 
-class CommandSpecificData {
+export class CommandSpecificData {
 
   private interfaceHandle   : number;
   private timeout           : number;
@@ -94,7 +66,7 @@ class CommandSpecificData {
   };
 };
 
-class CIPFrame {
+export class CIPFrame {
 
   private serviceId   : number;
   private pathSize    : number;
@@ -114,5 +86,80 @@ class CIPFrame {
     this.classId     = classId;
     this.instanceId  = instanceId;
     this.attributeId = attributeId ?? 0xFFFF;
+  };
+
+  get(): Array<number> {
+    return [
+      this.serviceId,
+      this.pathSize,
+      this.classId,
+      this.instanceId,
+      this.attributeId
+    ];
+  };
+};
+
+class Parser {
+
+};
+
+export class PacketConstructor {
+
+  public static create(directive: Directive): void  {
+
+    switch(directive) {
+
+      case 0x00:
+      break;
+
+    };
+  };
+
+  private static new_EIPHeader(
+    commandCode        : EIPCommandCode, 
+    encapsulatedLength : number, 
+    sessionHandle      : number,
+    status             : number,
+    context            : number,
+    options            : number | null
+  ): EIPHeader {
+    return new EIPHeader(
+      commandCode, 
+      encapsulatedLength, 
+      sessionHandle, 
+      status, 
+      context, 
+      options
+    );
+  };
+
+  private static new_CommandSpecificData(
+    interfaceHandle       : number | null,
+    timeout               : number | null,
+    itemCount             : number,
+    ...encapsulatedItems  : number[][]
+  ): CommandSpecificData {
+    return new CommandSpecificData(
+      interfaceHandle,
+      timeout,
+      itemCount,
+      ...encapsulatedItems
+    );
+  };
+
+  private static new_CIPFrame(
+    serviceId   : number,
+    pathSize    : number,
+    classId     : number,
+    instanceId  : number,
+    attributeId : number | null
+  ): CIPFrame {
+    return new CIPFrame(
+      serviceId,
+      pathSize,
+      classId,
+      instanceId,
+      attributeId
+    );
   };
 };

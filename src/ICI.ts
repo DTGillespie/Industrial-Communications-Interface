@@ -1,4 +1,15 @@
-import { Utilities, NetworkConfiguration, NetworkEntity, CIPDevice } from "./lib";
+import { 
+  Utilities, 
+  NetworkConfiguration, 
+  NetworkEntity, 
+  CIPDevice, 
+  EIPHeader,
+  CommandSpecificData,
+  CIPFrame,
+  RequestCallback,
+  Directive,
+  PacketConstructor
+ } from "./lib";
 
 class Device implements NetworkEntity {
   private networkConfiguration: NetworkConfiguration;
@@ -20,14 +31,34 @@ class Device implements NetworkEntity {
     return this.networkConfiguration;
   };
 
+  public requestFunctionRef(): Function {
+    return function request(
+      directive           : Directive,
+      callback            : RequestCallback
+    ): void {
+      const frames = PacketConstructor.create(directive);
+    };
+  };
 };
 
-class ENIPCIPRequest {
+class Request {
 
-  constructor() {
-    
+  private ethernetIpHeader    : EIPHeader    | null;
+  private commandSpecificData : CommandSpecificData | null;
+  private cipFrame            : CIPFrame            | null;
+  private callback            : Function            | null;
+
+  constructor(
+    ethernetIPHeader    : EIPHeader    | null,
+    commandSpecificData : CommandSpecificData | null,
+    cipFrame            : CIPFrame            | null,
+    callback            : Function            | null
+  ) {
+    this.ethernetIpHeader    = ethernetIPHeader;
+    this.commandSpecificData = commandSpecificData;
+    this.cipFrame            = cipFrame;
+    this.callback            = callback;
   };
-
 };
 
 export class IndustrialCommunicationsInterface {
@@ -43,7 +74,11 @@ export class IndustrialCommunicationsInterface {
       if (device) {
         device.setNetworkConfiguration(netConfig);
         const networkConfiguration = device.getNetworkConfiguration();
-        return {ID: id, NETWORK_CONFIGURATION: networkConfiguration};
+        return {
+          ID: id, 
+          NETWORK_CONFIGURATION: networkConfiguration,
+          request: device.requestFunctionRef()
+        };
       } else {
         return null;
       };
@@ -54,5 +89,5 @@ export class IndustrialCommunicationsInterface {
     };
   };
 
-  public static deleteDevice(id: string) { this.devices.delete(id); };
+  public static removeDevice(id: string) { this.devices.delete(id); };
 };
