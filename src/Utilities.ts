@@ -1,4 +1,5 @@
-import { Buffer, crypto } from './lib';
+import { Buffer } from 'node:buffer';
+import * as crypto from 'node:crypto';
 
 const ID_LENGTH = 24;
 

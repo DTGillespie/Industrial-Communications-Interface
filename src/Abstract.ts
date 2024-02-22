@@ -5,39 +5,39 @@ export enum Directive {
 };
 
 export enum EIPCommandCode {
-  NOP               = 0x00,
-  ListIdentity      = 0x63,
-  ListInterfaces    = 0x64,
-  RegisterSession   = 0x65,
-  UnregisterSession = 0x66,
-  SendRRData        = 0x6F,
-  SendUnitData      = 0x70,
-  IndicateStatus    = 0x78,
-  CancelSend        = 0x79,
-  MultiSend         = 0x64
+  NOP                = 0x00,
+  List_Identity      = 0x63,
+  List_Interfaces    = 0x64,
+  Register_Session   = 0x65,
+  Unregister_Session = 0x66,
+  Send_RR_Data       = 0x6F,
+  Send_Unit_Data     = 0x70,
+  Indicate_Status    = 0x78,
+  Cancel_Send        = 0x79,
+  Multi_Send         = 0x64
 };
 
 export enum CIPClassID {
-  Identity          = 0x01,
-  MessageRouter     = 0x02,
-  Assembly          = 0x04,
-  ConnectionManager = 0x06,
-  Parameter         = 0x0F
+  Identity           = 0x01,
+  Message_Router     = 0x02,
+  Assembly           = 0x04,
+  Connection_Manager = 0x06,
+  Parameter          = 0x0F
 };
 
 export enum CIPServiceID {
-  GetAttributeAll    = 0x01,
-  SetAttributeAll    = 0x02,
-  GetAttributeList   = 0x03,
-  SetAttributeList   = 0x04,
-  GetAttributeSingle = 0x0E,
-  SetAttributeSingle = 0x10
+  Get_Attribute_All    = 0x01,
+  Set_Attribute_All    = 0x02,
+  Get_Attribute_List   = 0x03,
+  Set_Attribute_List   = 0x04,
+  Get_Attribute_Single = 0x0E,
+  Set_Attribute_Single = 0x10
 };
 
 export interface NetworkConfiguration {
-  MAC_ADDRESS : string;
-  HOST        : string;
-  PORT        : number;
+  macAddress  : string;
+  host        : string;
+  port        : number;
 }; 
 
 export interface NetworkEntity {
@@ -47,8 +47,8 @@ export interface NetworkEntity {
 };
 
 export interface CIPDevice {
-  ID : string;
-  NETWORK_CONFIGURATION : NetworkConfiguration;
+  id : string;
+  networkConfiguration : NetworkConfiguration;
   request: Function;
 };
 

@@ -1,7 +1,3 @@
-/* Dependencies */
-import { Buffer } from 'node:buffer';
-import * as crypto from 'node:crypto';
-
 /* Misc. */
 import { Utilities } from './Utilities';
 
@@ -28,8 +24,6 @@ import {
 } from './Packet';
 
 export { 
-  Buffer,
-  crypto,
   Utilities,
   NetworkConfiguration,
   NetworkEntity,

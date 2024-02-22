@@ -16,9 +16,9 @@ class Device implements NetworkEntity {
   
   constructor() {
     this.networkConfiguration = {
-      MAC_ADDRESS  : "",
-      HOST : "",
-      PORT : 0
+      macAddress  : "",
+      host : "",
+      port : 0
     };
   };
 
@@ -75,8 +75,8 @@ export class IndustrialCommunicationsInterface {
         device.setNetworkConfiguration(netConfig);
         const networkConfiguration = device.getNetworkConfiguration();
         return {
-          ID: id, 
-          NETWORK_CONFIGURATION: networkConfiguration,
+          id: id, 
+          networkConfiguration: networkConfiguration,
           request: device.requestFunctionRef()
         };
       } else {
