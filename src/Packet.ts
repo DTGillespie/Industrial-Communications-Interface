@@ -1,31 +1,100 @@
-import { EIPCommandCode, Directive } from "./lib";
+import { EIPCommandCode, Directive, RequestFrame, Utilities } from "./lib";
+
+export class PacketConstructor {
+
+  public static create(directive: Directive): RequestFrame | null {
+
+    switch(directive) {
+
+      case 0x00:
+        return {
+          eipHeader: this.new_EIPHeader(
+            [0x0065, 2], 
+            [0x0004, 2], 
+            [0x00000001, 4], 
+            [0x00000000, 4], 
+            [0x0000000000000000, 8], 
+            [0x00000000, 4]
+          ),
+          commandSpecificData: this.new_CommandSpecificData(0x0001, 2),
+          cipFrame: null
+        };
+      
+      default:
+        return null;   
+    };
+  };
+
+  private static new_EIPHeader(
+    commandCode        : number[], 
+    encapsulatedLength : number[], 
+    sessionHandle      : number[],
+    status             : number[],
+    context            : number[],
+    options            : number[] | null
+  ): EIPHeader {
+    return new EIPHeader(
+      commandCode, 
+      encapsulatedLength, 
+      sessionHandle, 
+      status, 
+      context, 
+      options
+    );
+  };
+
+  private static new_CommandSpecificData(
+    ...encapsulatedItems  : number[]
+  ): CommandSpecificData {
+    return new CommandSpecificData(
+      encapsulatedItems
+    );
+  };
+
+  private static newCIPFrame(
+    serviceId   : number[],
+    pathSize    : number[],
+    classId     : number[],
+    instanceId  : number[],
+    attributeId : number[] | null
+  ): CIPFrame {
+    return new CIPFrame(
+      serviceId,
+      pathSize,
+      classId,
+      instanceId,
+      attributeId
+    );
+  };
+};
 
 export class EIPHeader {
   
-  private commandCode        : EIPCommandCode;
-  private encapsulatedLength : number; 
-  private sessionHandle      : number;
-  private status             : number; 
-  private context            : number;
-  private options            : number;
+  private commandCode        : Uint8Array;
+  private encapsulatedLength : Uint8Array; 
+  private sessionHandle      : Uint8Array;
+  private status             : Uint8Array; 
+  private context            : Uint8Array;
+  private options            : Uint8Array;
 
   constructor(
-    commandCode        : EIPCommandCode, 
-    encapsulatedLength : number, 
-    sessionHandle      : number,
-    status             : number,
-    context            : number,
-    options            : number | null
+    commandCode        : number[], 
+    encapsulatedLength : number[], 
+    sessionHandle      : number[],
+    status             : number[],
+    context            : number[],
+    options            : number[] | null
     ) {
-    this.commandCode        = commandCode;
-    this.encapsulatedLength = encapsulatedLength;
-    this.sessionHandle      = sessionHandle;
-    this.status             = status;
-    this.context            = context;
-    this.options            = options ?? 0x0000;
+    this.commandCode        = Utilities.numberToUintArray(...commandCode);
+    this.encapsulatedLength = Utilities.numberToUintArray(...encapsulatedLength);
+    this.sessionHandle      = Utilities.numberToUintArray(...sessionHandle);
+    this.status             = Utilities.numberToUintArray(...status);
+    this.context            = Utilities.numberToUintArray(...context);
+    this.options            = Utilities.numberToUintArray(...options!) 
+                           ?? Utilities.numberToUintArray(0x0000, 2);
   };
 
-  get(): Array<number> {
+  get(): Array<Uint8Array> {
     return [
       this.commandCode, 
       this.encapsulatedLength, 
@@ -39,56 +108,45 @@ export class EIPHeader {
 
 export class CommandSpecificData {
 
-  private interfaceHandle   : number;
-  private timeout           : number;
-  private itemCount         : number;
-  private encapsulatedItems : number[][];
+  private encapsulatedItems : Uint8Array[];
 
   constructor(
-    interfaceHandle       : number | null,
-    timeout               : number | null,
-    itemCount             : number,
     ...encapsulatedItems  : number[][]
   ) {
-    this.interfaceHandle   = interfaceHandle ?? 0x000;
-    this.timeout           = timeout ?? 0x0400;
-    this.itemCount         = itemCount;
-    this.encapsulatedItems = encapsulatedItems;
+    this.encapsulatedItems = encapsulatedItems.map(
+      (item) => Utilities.numberToUintArray(...item)
+    );
   }; 
 
-  get(): Array<number> {
-    return [
-      this.interfaceHandle,
-      this.timeout,
-      this.itemCount,
-      ...this.encapsulatedItems.flatMap(([item, length]) => [item, length])
-    ];
+  get(): Array<Uint8Array> {
+    return this.encapsulatedItems;
   };
 };
 
 export class CIPFrame {
 
-  private serviceId   : number;
-  private pathSize    : number;
-  private classId     : number;
-  private instanceId  : number;
-  private attributeId : number;
+  private serviceId   : Uint8Array;
+  private pathSize    : Uint8Array;
+  private classId     : Uint8Array;
+  private instanceId  : Uint8Array;
+  private attributeId : Uint8Array;
 
   constructor(
-    serviceId   : number,
-    pathSize    : number,
-    classId     : number,
-    instanceId  : number,
-    attributeId : number | null
+    serviceId   : number[],
+    pathSize    : number[],
+    classId     : number[],
+    instanceId  : number[],
+    attributeId : number[] | null
   ) {
-    this.serviceId   = serviceId;
-    this.pathSize    = pathSize;
-    this.classId     = classId;
-    this.instanceId  = instanceId;
-    this.attributeId = attributeId ?? 0xFFFF;
+    this.serviceId   = Utilities.numberToUintArray(...serviceId);
+    this.pathSize    = Utilities.numberToUintArray(...pathSize);
+    this.classId     = Utilities.numberToUintArray(...classId);
+    this.instanceId  = Utilities.numberToUintArray(...instanceId);
+    this.attributeId = Utilities.numberToUintArray(...attributeId!)
+                    ?? Utilities.numberToUintArray(0xFFFF, 4);
   };
 
-  get(): Array<number> {
+  get(): Array<Uint8Array> {
     return [
       this.serviceId,
       this.pathSize,
@@ -96,70 +154,5 @@ export class CIPFrame {
       this.instanceId,
       this.attributeId
     ];
-  };
-};
-
-class Parser {
-
-};
-
-export class PacketConstructor {
-
-  public static create(directive: Directive): void  {
-
-    switch(directive) {
-
-      case 0x00:
-      break;
-
-    };
-  };
-
-  private static new_EIPHeader(
-    commandCode        : EIPCommandCode, 
-    encapsulatedLength : number, 
-    sessionHandle      : number,
-    status             : number,
-    context            : number,
-    options            : number | null
-  ): EIPHeader {
-    return new EIPHeader(
-      commandCode, 
-      encapsulatedLength, 
-      sessionHandle, 
-      status, 
-      context, 
-      options
-    );
-  };
-
-  private static new_CommandSpecificData(
-    interfaceHandle       : number | null,
-    timeout               : number | null,
-    itemCount             : number,
-    ...encapsulatedItems  : number[][]
-  ): CommandSpecificData {
-    return new CommandSpecificData(
-      interfaceHandle,
-      timeout,
-      itemCount,
-      ...encapsulatedItems
-    );
-  };
-
-  private static new_CIPFrame(
-    serviceId   : number,
-    pathSize    : number,
-    classId     : number,
-    instanceId  : number,
-    attributeId : number | null
-  ): CIPFrame {
-    return new CIPFrame(
-      serviceId,
-      pathSize,
-      classId,
-      instanceId,
-      attributeId
-    );
   };
 };

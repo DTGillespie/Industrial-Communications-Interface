@@ -5,12 +5,14 @@ import { Utilities } from './Utilities';
 import { 
   NetworkEntity, 
   NetworkConfiguration, 
-  CIPDevice, 
-  RequestCallback,
+  DeviceHandle, 
+  RequestFunc,
+  ResponseListener,
   Directive,
   EIPCommandCode, 
   CIPClassID, 
-  CIPServiceID, 
+  CIPServiceID,
+  RequestFrame
 } from './Abstract';
 
 /* Objects */
@@ -27,8 +29,9 @@ export {
   Utilities,
   NetworkConfiguration,
   NetworkEntity,
-  CIPDevice,
-  RequestCallback,
+  DeviceHandle,
+  RequestFunc,
+  ResponseListener,
   IndustrialCommunicationsInterface,
   EIPHeader,
   CommandSpecificData,
@@ -37,5 +40,6 @@ export {
   EIPCommandCode,
   CIPServiceID,
   CIPClassID,
-  PacketConstructor
+  PacketConstructor,
+  RequestFrame
 };

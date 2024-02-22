@@ -3,12 +3,17 @@ import {
   Directive,
  } from '../src/lib';
 
-const micro800 = IndustrialCommunicationsInterface.newDevice({
-  macAddress: "fe80::1f4d:d487:75c3:498e", 
-  host: "192.168.1.163", 
-  port: 44818
-});
-
-micro800?.request(Directive.Forward_Open, () => {
-  console.log("Debug");
-});
+const micro800 = IndustrialCommunicationsInterface.newDevice(
+  { 
+    macAddress: "5C:88:16:D7:4E:11", 
+    host: "192.168.85.10", 
+    port: 44818,
+    localPort: 47687,
+  }, true, 
+  () => {
+    console.log("Connected");
+    micro800?.request(Directive.Forward_Open, () => {
+      console.log("Debug Response");
+    });
+  }
+);

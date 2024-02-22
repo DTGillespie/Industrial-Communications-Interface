@@ -1,83 +1,102 @@
+import net, { Socket, NetConnectOpts } from 'node:net';
+
 import { 
   Utilities, 
   NetworkConfiguration, 
   NetworkEntity, 
-  CIPDevice, 
+  DeviceHandle, 
   EIPHeader,
   CommandSpecificData,
   CIPFrame,
-  RequestCallback,
+  RequestFunc,
+  ResponseListener,
   Directive,
   PacketConstructor
  } from "./lib";
 
 class Device implements NetworkEntity {
-  private networkConfiguration: NetworkConfiguration;
-  
-  constructor() {
-    this.networkConfiguration = {
-      macAddress  : "",
-      host : "",
-      port : 0
-    };
+
+  private networkConfiguration: NetworkConfiguration | null;
+  private littleEndian : boolean
+  private tcpClient    : Socket | null;
+
+  constructor(littleEndian: boolean) {
+    this.networkConfiguration = null;
+    this.tcpClient            = null;
+    this.littleEndian         = littleEndian;
   };
 
-  public setNetworkConfiguration(configuration: NetworkConfiguration): void { 
+  public setNetworkConfiguration(configuration: NetworkConfiguration, connectionListener?: () => void): void { 
     this.networkConfiguration = configuration;
     Object.freeze(this.networkConfiguration);
+
+    let options: NetConnectOpts = {
+      host: this.networkConfiguration.host, 
+      port: this.networkConfiguration.port,
+      localPort: this.networkConfiguration.localPort ?? undefined
+    };
+
+    this.tcpClient = net.createConnection(options, connectionListener);
   };
 
   public getNetworkConfiguration(): NetworkConfiguration {
-    return this.networkConfiguration;
+    return this.networkConfiguration!;
   };
 
-  public requestFunctionRef(): Function {
-    return function request(
-      directive           : Directive,
-      callback            : RequestCallback
-    ): void {
+  public requestFuncRef(): RequestFunc {
+    return (
+      directive        : Directive,
+      responseListener : ResponseListener
+    ): void => {
       const frames = PacketConstructor.create(directive);
+      const request = new Request(
+        frames?.eipHeader           ?? null,
+        frames?.commandSpecificData ?? null,
+        frames?.cipFrame            ?? null,
+        this.littleEndian,
+      );
     };
   };
 };
 
 class Request {
 
-  private ethernetIpHeader    : EIPHeader    | null;
-  private commandSpecificData : CommandSpecificData | null;
-  private cipFrame            : CIPFrame            | null;
-  private callback            : Function            | null;
+  private eipHeader           : Buffer | null;
+  private commandSpecificData : Buffer | null;
+  private cipFrame            : Buffer | null;
+  private concatBuffer        : Buffer;
 
   constructor(
-    ethernetIPHeader    : EIPHeader    | null,
+    eipHeader           : EIPHeader           | null,
     commandSpecificData : CommandSpecificData | null,
     cipFrame            : CIPFrame            | null,
-    callback            : Function            | null
+    littleEndian        : boolean
   ) {
-    this.ethernetIpHeader    = ethernetIPHeader;
-    this.commandSpecificData = commandSpecificData;
-    this.cipFrame            = cipFrame;
-    this.callback            = callback;
+    this.eipHeader           = eipHeader           !== null ? Utilities.writeBuffer(littleEndian, ...eipHeader.get()) : null;
+    this.commandSpecificData = commandSpecificData !== null ? Utilities.writeBuffer(littleEndian, ...commandSpecificData.get()) : null;
+    this.cipFrame            = cipFrame            !== null ? Utilities.writeBuffer(littleEndian, ...cipFrame.get()) : null;
+    const buffers = [this.eipHeader, this.commandSpecificData, this.cipFrame].filter(buffer => buffer !== null) as Buffer[];
+    this.concatBuffer = Buffer.concat(buffers);
   };
 };
 
 export class IndustrialCommunicationsInterface {
   private static devices: Map<string, Device> = new Map<string, Device>();
 
-  public static newDevice(netConfig: NetworkConfiguration): CIPDevice | null {
+  public static newDevice(netConfig: NetworkConfiguration, littleEndian: boolean, connectionListener?: () => void): DeviceHandle | null {
     try {
 
       const id = Utilities.makeHashId(); 
-      IndustrialCommunicationsInterface.devices.set(id, new Device);
+      IndustrialCommunicationsInterface.devices.set(id, new Device(littleEndian));
       const device = IndustrialCommunicationsInterface.devices.get(id);
 
       if (device) {
-        device.setNetworkConfiguration(netConfig);
+        device.setNetworkConfiguration(netConfig, connectionListener);
         const networkConfiguration = device.getNetworkConfiguration();
         return {
           id: id, 
           networkConfiguration: networkConfiguration,
-          request: device.requestFunctionRef()
+          request: device.requestFuncRef()
         };
       } else {
         return null;

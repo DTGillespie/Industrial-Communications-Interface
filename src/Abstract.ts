@@ -38,19 +38,26 @@ export interface NetworkConfiguration {
   macAddress  : string;
   host        : string;
   port        : number;
+  localPort   : number | null;
 }; 
 
 export interface NetworkEntity {
   setNetworkConfiguration(configuration: NetworkConfiguration): void;
   getNetworkConfiguration(): NetworkConfiguration;
-  requestFunctionRef(): Function;
+  requestFuncRef(): Function;
 };
 
-export interface CIPDevice {
+export interface RequestFrame {
+  eipHeader           : EIPHeader,
+  commandSpecificData : CommandSpecificData,
+  cipFrame            : CIPFrame | null,
+};
+
+export interface DeviceHandle {
   id : string;
   networkConfiguration : NetworkConfiguration;
   request: Function;
 };
 
-export type RequestFuncton = (ethernetIpHeader: EIPHeader, commandSpecificData: CommandSpecificData, cipFrame: CIPFrame, callback: RequestCallback) => void;
-export type RequestCallback = (error: Error | null, response?: Buffer) => void;
+export type RequestFunc      = (directive: Directive, responseListener: ResponseListener) => void;
+export type ResponseListener = (error: Error | null, response?: Buffer) => void;
