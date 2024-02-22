@@ -9,11 +9,14 @@ const micro800 = IndustrialCommunicationsInterface.newDevice(
     host: "192.168.85.10", 
     port: 44818,
     localPort: 47687,
-  }, true, 
+  }, true,
   () => {
     console.log("Connected");
     micro800?.request(Directive.Forward_Open, () => {
       console.log("Debug Response");
     });
+  },
+  (error: any) => {
+    console.log(error);
   }
 );

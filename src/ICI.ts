@@ -1,5 +1,4 @@
 import net, { Socket, NetConnectOpts } from 'node:net';
-
 import { 
   Utilities, 
   NetworkConfiguration, 
@@ -26,7 +25,11 @@ class Device implements NetworkEntity {
     this.littleEndian         = littleEndian;
   };
 
-  public setNetworkConfiguration(configuration: NetworkConfiguration, connectionListener?: () => void): void { 
+  public setNetworkConfiguration(
+    configuration: NetworkConfiguration, 
+    connectionListener? : () => void,
+    errorListener?      : (error: any) => void
+    ): void { 
     this.networkConfiguration = configuration;
     Object.freeze(this.networkConfiguration);
 
@@ -36,7 +39,14 @@ class Device implements NetworkEntity {
       localPort: this.networkConfiguration.localPort ?? undefined
     };
 
-    this.tcpClient = net.createConnection(options, connectionListener);
+    if (connectionListener === undefined) connectionListener = () => {};
+    if (errorListener === undefined) errorListener = (error: any) => {throw error};
+    try {
+      this.tcpClient = net.createConnection(options, connectionListener);
+      this.tcpClient.on('error', errorListener);
+    } catch(error) {
+      throw error;
+    };
   };
 
   public getNetworkConfiguration(): NetworkConfiguration {
@@ -48,6 +58,7 @@ class Device implements NetworkEntity {
       directive        : Directive,
       responseListener : ResponseListener
     ): void => {
+      this.tcpClient?.on('data', responseListener);
       const frames = PacketConstructor.create(directive);
       const request = new Request(
         frames?.eipHeader           ?? null,
@@ -55,6 +66,7 @@ class Device implements NetworkEntity {
         frames?.cipFrame            ?? null,
         this.littleEndian,
       );
+
     };
   };
 };
@@ -78,12 +90,22 @@ class Request {
     const buffers = [this.eipHeader, this.commandSpecificData, this.cipFrame].filter(buffer => buffer !== null) as Buffer[];
     this.concatBuffer = Buffer.concat(buffers);
   };
+
+  get(): Buffer {
+    return this.concatBuffer;
+  };
 };
 
 export class IndustrialCommunicationsInterface {
   private static devices: Map<string, Device> = new Map<string, Device>();
 
-  public static newDevice(netConfig: NetworkConfiguration, littleEndian: boolean, connectionListener?: () => void): DeviceHandle | null {
+  public static newDevice(
+    netConfig: NetworkConfiguration, 
+    littleEndian: boolean, 
+    connectionListener? : () => void,
+    errorListener?      : (error:any) => void
+    ): DeviceHandle | null
+  {
     try {
 
       const id = Utilities.makeHashId(); 
@@ -91,7 +113,7 @@ export class IndustrialCommunicationsInterface {
       const device = IndustrialCommunicationsInterface.devices.get(id);
 
       if (device) {
-        device.setNetworkConfiguration(netConfig, connectionListener);
+        device.setNetworkConfiguration(netConfig, connectionListener, errorListener);
         const networkConfiguration = device.getNetworkConfiguration();
         return {
           id: id, 
