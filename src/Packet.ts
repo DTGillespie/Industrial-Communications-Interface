@@ -2,26 +2,54 @@ import { EIPCommandCode, Directive, RequestFrame, Utilities } from "./lib";
 
 export class PacketConstructor {
 
-  public static create(directive: Directive): RequestFrame | null {
+  public static create(directive: Directive, sessionHandle?: number, ...userDefinedValues: number[][]): RequestFrame | null {
 
     switch(directive) {
 
       case 0x00:
         return {
           eipHeader: this.new_EIPHeader(
-            [0x0065, 2], 
-            [0x0004, 2], 
-            [0x00000001, 4], 
-            [0x00000000, 4], 
-            [0x0000000000000000, 8], 
-            [0x00000000, 4]
+            [0x0065, 2],             // Command
+            [0x0004, 2],             // Length
+            [0x00000001, 4],         // Session Handle
+            [0x00000000, 4],         // Status
+            [0x0000000000000000, 8], // Context
+            [0x00000000, 4]          // Options
           ),
-          commandSpecificData: this.new_CommandSpecificData(0x0001, 2),
+          commandSpecificData: this.new_CommandSpecificData(
+            [0x0001, 2],
+            [0x0000, 2]
+          ),
           cipFrame: null
         };
-      
+
+        case 0x01:
+        return {
+          eipHeader: this.new_EIPHeader(
+            [0x006F, 2], 
+            [0x0004, 2], 
+            [sessionHandle !== undefined ? sessionHandle : 0x00000000, 4], 
+            [0x00000000, 4], 
+            [0x0000000000010000, 8], 
+            [0x0000, 2]
+          ),
+          commandSpecificData: this.new_CommandSpecificData(
+            [0x0000, 2], // Interface Handle: CIP
+            [0x0400, 2], // Timeout: 1024
+            [0x0002, 2], // Item Count
+            [0x0000, 2], // Null Address Item
+            [0x0000, 2], // ^ Length
+            [0x00B2, 2], // Unconnected Data Item
+            [0x000A, 2], // ^ Length
+          ),
+          cipFrame: this.new_CIPFrame(
+            ...userDefinedValues.map(
+              (value, index) => value !== undefined ? value : (index === 0 ? [0x00, 1] : [0x0000, 2]
+          )))
+        };
+
       default:
-        return null;   
+      return null;   
     };
   };
 
@@ -44,26 +72,20 @@ export class PacketConstructor {
   };
 
   private static new_CommandSpecificData(
-    ...encapsulatedItems  : number[]
+    ...encapsulatedItems  : number[][]
   ): CommandSpecificData {
     return new CommandSpecificData(
-      encapsulatedItems
+      ...encapsulatedItems
     );
   };
 
-  private static newCIPFrame(
-    serviceId   : number[],
-    pathSize    : number[],
-    classId     : number[],
-    instanceId  : number[],
-    attributeId : number[] | null
-  ): CIPFrame {
+  private static new_CIPFrame(...values: number[][]): CIPFrame {
     return new CIPFrame(
-      serviceId,
-      pathSize,
-      classId,
-      instanceId,
-      attributeId
+      values[0],
+      values[1],
+      values[2],
+      values[3],
+      values[4]
     );
   };
 };

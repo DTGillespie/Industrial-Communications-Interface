@@ -22,18 +22,18 @@ export class Utilities {
     ]);
 
     const conversionFunc = typeMap.get(typeof args[0]);
-    if (!conversionFunc) throw new Error(`Invalid data type: 0x${args[0].toString(16)}. Expected number of bigint. Received ${typeof args[0]}`); 
+    if (!conversionFunc) throw new Error(`Invalid data type: ${args[0] !== undefined && args[0] !== null ? "0x" : null}${args[0].toString(16)}. Expected number of bigint. Received ${typeof args[0]}`); 
     try {
       return conversionFunc(args[0], args[1]);
     } catch(error: any) {
-      throw new Error(`Failed to convert value to Uint8Array. Value: 0x${args[0].toString(16)}, Size (Bytes): ${args[1]}. ${error.message}`);
+      throw new Error(`Failed to convert value to Uint8Array. Value: ${args[0] !== undefined && args[0] !== null ? "0x" : null}${args[0].toString(16)}, Size (Bytes): ${args[1]}. ${error.message}`);
     };
   };
 
   static writeBuffer(littleEndian: boolean, ...data: Array<Uint8Array>): Buffer {
     const typeMap = new Map<string, (value: number | bigint, offset: number, littleEndian: boolean) => void>([
       ['number', (value, offset, littleEndian) => {
-        if (littleEndian) {
+        if (!littleEndian) { /* Byte order is inverted by the typed-arrays, so keep this flipped. */
           if (value <= 0xFF) {
             buffer.writeUInt8(value as number, offset);
           } else if (value <= 0xFFFF) {
@@ -66,10 +66,8 @@ export class Utilities {
     });
 
     const buffer = Buffer.alloc(bufferSize);
-    
     let offset = 0;
     data.forEach((byteArray) => {
-
       const length = byteArray.length;
       let value    = null;
 
@@ -81,17 +79,18 @@ export class Utilities {
                       | (byteArray[4] << 32) | (byteArray[5] << 40) | (byteArray[6] << 48) | (byteArray[7] << 56); break;  
       };
 
+
       const writeFunc = typeMap.get(typeof value);
       if (!writeFunc) throw new Error(`Invalid data type at buffer offset: ${offset}. Expected number of bigint. Received ${typeof value}`);
       try {
         writeFunc(value!, offset, littleEndian);
+        offset += length;
       } catch(error: any) {
         throw new Error(`Failed to write data to buffer. Offset: ${offset}. ${error.message}`);
       };
-
-      offset += length;
     });
     return buffer;
+
   };
 
   static makeHashId(...input: string[]): string {

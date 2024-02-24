@@ -3,7 +3,6 @@ import { Utilities } from './Utilities';
 
 /* Abstract */
 import { 
-  NetworkEntity, 
   NetworkConfiguration, 
   DeviceHandle, 
   RequestFunc,
@@ -28,7 +27,6 @@ import {
 export { 
   Utilities,
   NetworkConfiguration,
-  NetworkEntity,
   DeviceHandle,
   RequestFunc,
   ResponseListener,

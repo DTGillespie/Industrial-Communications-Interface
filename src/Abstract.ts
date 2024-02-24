@@ -1,7 +1,9 @@
 import {EIPHeader, CommandSpecificData, CIPFrame} from "./lib";
 
 export enum Directive {
-  Forward_Open = 0x00,
+  Forward_Open         = 0x00,
+  Get_Attribute_Single = 0x01,
+  Implicit_Read        = 0xFE
 };
 
 export enum EIPCommandCode {
@@ -41,12 +43,6 @@ export interface NetworkConfiguration {
   localPort   : number | null;
 }; 
 
-export interface NetworkEntity {
-  setNetworkConfiguration(configuration: NetworkConfiguration): void;
-  getNetworkConfiguration(): NetworkConfiguration;
-  requestFuncRef(): Function;
-};
-
 export interface RequestFrame {
   eipHeader           : EIPHeader,
   commandSpecificData : CommandSpecificData,
@@ -56,8 +52,13 @@ export interface RequestFrame {
 export interface DeviceHandle {
   id : string;
   networkConfiguration : NetworkConfiguration;
-  request: Function;
+  request         : Function;
+  setSessionHandle: Function;
 };
 
-export type RequestFunc      = (directive: Directive, responseListener: ResponseListener) => void;
+export type RequestFunc = (
+  directive          : Directive, 
+  responseListener   : ResponseListener,
+  userDefinedValues? : number[][]
+) => void;
 export type ResponseListener = (error: Error | null, response?: Buffer) => void;
