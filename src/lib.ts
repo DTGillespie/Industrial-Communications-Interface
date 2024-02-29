@@ -11,17 +11,16 @@ import {
   EIPCommandCode, 
   CIPClassID, 
   CIPServiceID,
-  RequestFrame
+  RequestPacket
 } from './Abstract';
 
 /* Objects */
 import {IndustrialCommunicationsInterface} from './ICI';
 
 import { 
+  PacketConstructor,
   EIPHeader, 
-  CommandSpecificData, 
-  CIPFrame,
-  PacketConstructor
+  CIPPacket
 } from './Packet';
 
 export { 
@@ -32,12 +31,11 @@ export {
   ResponseListener,
   IndustrialCommunicationsInterface,
   EIPHeader,
-  CommandSpecificData,
-  CIPFrame,
+  CIPPacket,
   Directive,
   EIPCommandCode,
   CIPServiceID,
   CIPClassID,
   PacketConstructor,
-  RequestFrame
+  RequestPacket
 };

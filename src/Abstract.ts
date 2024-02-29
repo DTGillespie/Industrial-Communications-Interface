@@ -1,13 +1,13 @@
-import {EIPHeader, CommandSpecificData, CIPFrame} from "./lib";
+import {EIPHeader, CIPPacket} from "./lib";
 
 export enum Directive {
-  Forward_Open         = 0x00,
-  Get_Attribute_Single = 0x01,
-  Implicit_Read        = 0xFE
+  Forward_Open   = 0x00,
+  List_Services  = 0x01,
 };
 
 export enum EIPCommandCode {
   NOP                = 0x00,
+  List_Services      = 0x04,
   List_Identity      = 0x63,
   List_Interfaces    = 0x64,
   Register_Session   = 0x65,
@@ -16,7 +16,8 @@ export enum EIPCommandCode {
   Send_Unit_Data     = 0x70,
   Indicate_Status    = 0x78,
   Cancel_Send        = 0x79,
-  Multi_Send         = 0x64
+  Multi_Send         = 0x64,
+  StartDTLS2         = 0xC8 
 };
 
 export enum CIPClassID {
@@ -37,28 +38,27 @@ export enum CIPServiceID {
 };
 
 export interface NetworkConfiguration {
-  macAddress  : string;
-  host        : string;
-  port        : number;
-  localPort   : number | null;
+  macAddress : string;
+  host       : string;
+  port       : number;
+  localPort  : number | null;
 }; 
 
-export interface RequestFrame {
-  eipHeader           : EIPHeader,
-  commandSpecificData : CommandSpecificData,
-  cipFrame            : CIPFrame | null,
+export interface RequestPacket {
+  eipHeader : EIPHeader,
+  cipPacket : CIPPacket | null,
 };
 
 export interface DeviceHandle {
-  id : string;
+  id                   : string;
   networkConfiguration : NetworkConfiguration;
-  request         : Function;
-  setSessionHandle: Function;
+  request              : Function;
+  setSessionHandle     : Function;
 };
 
 export type RequestFunc = (
-  directive          : Directive, 
-  responseListener   : ResponseListener,
-  userDefinedValues? : number[][]
+  directive            : Directive, 
+  packetEncapsulation? : number[][],
+  responseListener?    : ResponseListener
 ) => void;
 export type ResponseListener = (error: Error | null, response?: Buffer) => void;

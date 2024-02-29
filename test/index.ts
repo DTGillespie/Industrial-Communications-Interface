@@ -4,40 +4,53 @@ import {
   Directive,
  } from '../src/lib';
 
- const server: dgram.Socket = dgram.createSocket('udp4');
- 
+ const udpListener: dgram.Socket = dgram.createSocket('udp4');
  const PORT: number = 44818;
- 
- server.on('message', (msg: Buffer, rinfo: dgram.RemoteInfo) => {
-   console.log(`Received message from ${rinfo.address}:${rinfo.port}: ${msg}`);
+ udpListener.on('message', (msg: Buffer, rinfo: dgram.RemoteInfo) => {
+  if (rinfo.address !== "192.168.1.85") {
+    console.log(`UDP Received: ${msg}`);
+  };
  });
  
- server.on('error', (err: Error) => {
+ udpListener.on('error', (err: Error) => {
    console.error(`UDP server error:\n${err.stack}`);
-   server.close();
+   udpListener.close();
  });
  
- server.bind(PORT, () => {
-   console.log(`UDP server listening on port ${PORT}`);
+ udpListener.bind(PORT, () => {
+   console.log(`UDP Listener Opened On Port: ${PORT}`);
  });
+
 const micro800 = IndustrialCommunicationsInterface.newDevice(
   { 
     macAddress: "FF:FF:FF:FF:FF:FF", 
-    host: "192.168.1.163", 
+    host: "192.168.85.10", 
     port: 44818,
     localPort: null,
   }, true,
   () => {
     console.log("Connected");
-    micro800?.request(Directive.Forward_Open, (buffer: Buffer) => {
-      console.log("Buffer: ", buffer);
-      logBuffer(buffer);
-      parseResponse_ForwardOpen(
-        buffer, 
-        Directive.Get_Attribute_Single
-      );
-    });
-  },
+    micro800?.request(
+      Directive.List_Services, 
+      [
+        [0x0000, 2], // EIP Header length field
+
+        [0x0000, 2], [0x0400, 2], [0x0002, 2], 
+        [0x0000, 2], [0x0000, 2], [0x00B2, 2], 
+        [0x000A, 2], 
+        // Item #2 (No data required for null address item)
+        [0x0091, 2], [0x0006, 2], [0x0002, 2],        
+        [0x0000, 2], [0x09, 1],          
+        // Symbolic Tag Name ("EIP_DEBUG")
+        [0x45, 1], [0x49, 1], [0x50, 1], 
+        [0x5F, 1], [0x44, 1], [0x45, 1], 
+        [0x42, 1], [0x55, 1], [0x47, 1],              
+        [0x0000, 2]
+      ],
+      (buffer: Buffer) => {
+        logBuffer(buffer);
+      });
+    },
   (error: any) => {
     console.log(error);
   }
@@ -49,15 +62,6 @@ function parseResponse_ForwardOpen(buffer: Buffer, responseDirective: Directive)
       micro800?.setSessionHandle(buffer.readUInt32BE(4));
       switch(responseDirective) {
         case 0x01:
-          micro800?.request(Directive.Get_Attribute_Single, (buffer: Buffer) => {
-            logBuffer(buffer);
-          },[
-            [0x0E, 1]  , // Service
-            [0x0004, 2], // Path Size: 16-bit Words (Inclusive of itself)
-            [0x0001, 2], // Class ID: 0x01 Identity Object
-            [0x0001, 2], // Instance ID: 0x01
-            [0x0001, 2], // Attribute ID
-          ]);
         break;
       };
     break;

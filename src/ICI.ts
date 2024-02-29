@@ -4,8 +4,7 @@ import {
   NetworkConfiguration, 
   DeviceHandle, 
   EIPHeader,
-  CommandSpecificData,
-  CIPFrame,
+  CIPPacket,
   RequestFunc,
   ResponseListener,
   Directive,
@@ -52,21 +51,28 @@ class Device {
 
   public ref_request(): RequestFunc {
     return (
-      directive         : Directive,
-      responseListener? : ResponseListener
+      directive            : Directive,
+      packetEncapsulation? : number[][],
+      responseListener?    : ResponseListener,
     ): void => {
       this.tcpClient?.on('data', responseListener !== undefined ? responseListener : (buffer: Buffer) => {
         console.log(`Received: `, buffer);
       });
-      const frames = PacketConstructor.create(directive, this.sessionHandle ?? undefined);
-      console.log(frames);
+      
+      const packet = packetEncapsulation !== undefined 
+      ? PacketConstructor.create(directive, this.sessionHandle ?? undefined, ...packetEncapsulation!)
+      : PacketConstructor.create(directive, this.sessionHandle ?? undefined);
+
       const request = new Request(
-        frames?.eipHeader           ?? null,
-        frames?.commandSpecificData ?? null,
-        frames?.cipFrame            ?? null,
+        packet?.eipHeader ?? null,
+        packet?.cipPacket ?? null,
         this.littleEndian,
       );
-      this.tcpClient?.write(request.getPacketBuffer());
+      try {
+        this.tcpClient?.write(request.getPacketBuffer());
+      } catch(error) {
+        console.log(error);
+      }
     };
   };
 
@@ -80,20 +86,17 @@ class Device {
 class Request {
 
   private eipHeader           : Buffer | null;
-  private commandSpecificData : Buffer | null;
-  private cipFrame            : Buffer | null;
+  private cipPacket           : Buffer | null;
   private packetBuffer        : Buffer;
 
   constructor(
-    eipHeader           : EIPHeader           | null,
-    commandSpecificData : CommandSpecificData | null,
-    cipFrame            : CIPFrame            | null,
+    eipHeader           : EIPHeader | null,
+    cipPacket           : CIPPacket | null,
     littleEndian        : boolean
   ) {
-    this.eipHeader           = eipHeader           !== null ? Utilities.writeBuffer(littleEndian, ...eipHeader.get()) : null;
-    this.commandSpecificData = commandSpecificData !== null ? Utilities.writeBuffer(littleEndian, ...commandSpecificData.get()) : null;
-    this.cipFrame            = cipFrame            !== null ? Utilities.writeBuffer(littleEndian, ...cipFrame.get()) : null;
-    const buffers = [this.eipHeader, this.commandSpecificData, this.cipFrame].filter(buffer => buffer !== null) as Buffer[];
+    this.eipHeader = eipHeader !== null ? Utilities.writeBuffer(littleEndian, ...eipHeader.get()) : null;
+    this.cipPacket = cipPacket !== null ? Utilities.writeBuffer(littleEndian, ...cipPacket.get()) : null;
+    const buffers = [this.eipHeader, this.cipPacket].filter(buffer => buffer !== null) as Buffer[];
     this.packetBuffer = Buffer.concat(buffers);
     console.log(this.packetBuffer);
   };
@@ -125,7 +128,6 @@ export class IndustrialCommunicationsInterface {
           networkConfiguration: networkConfiguration,
           request: device.ref_request(),
           setSessionHandle: device.ref_setSessionHandle()
-
         };
       } else {
         return null;
